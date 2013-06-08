@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ "$1" == "remove" ] || [ "$1" == "purge" ]; then
+
+        if [ -f "/etc/init.d/transmission" ]; then
+                /etc/init.d/transmission stop &>/dev/null;
+        fi
+
+fi
+

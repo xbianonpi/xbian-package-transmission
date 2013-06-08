@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ "$1" == "remove" ] || [ "$1" == "purge" ]; then
+
+	rm -fr /usr/local/share/transmission
+
+	if [ -h /usr/local/etc/transmission ]; then
+		rm -f /usr/local/etc/transmission
+	fi
+
+# removing config files should be performed only if user requested purge
+
+	if [ "$1" == "purge" ]; then
+
+		rm -fr /etc/transmission
+                rm -f /etc/default/transmission
+	fi
+
+	true
+
+fi
