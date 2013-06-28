@@ -1,10 +1,10 @@
 Origin: XBian
 Package: xbian-package-transmission
-Version: 2.76
+Version: 2.80
 Section: net
 Priority: optional
 Architecture: armhf
 Depends: xbian-update, libevent-dev, libcurl3, unrar
 Conflicts: transmission-cli, transmission-daemon, transmission-common
 Maintainer: sjengfred <sjengfred@home.nl>
-Description: Transmission 2.76 compiled, patched and configured for XBian
+Description: Transmission 2.80 compiled, patched and configured for XBian
