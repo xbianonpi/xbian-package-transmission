@@ -1,2 +1,2 @@
-Transmission 2.80 for xbian
+Transmission 2.82 for xbian
 ===========================
