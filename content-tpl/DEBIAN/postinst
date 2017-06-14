@@ -1,0 +1,98 @@
+#!/bin/bash
+
+if [[ $1 == "configure" ]]; then
+	
+	/etc/init.d/transmission-daemon stop &>/dev/null
+	stop transmission-daemon &>/dev/null
+
+	chmod 664 /etc/default/transmission-daemon
+	chgrp xbian /etc/default/transmission-daemon
+
+	update-rc.d transmission-daemon remove &>/dev/null
+
+	if ! btrfs-auto-snapshot listvol | grep -qw storage; then
+		btrfs-auto-snapshot createvol storage
+		if grep -q EXCLUDESUB /etc/default/xbian-snap; then
+			if ! grep -q EXCLUDESUB=.*storage /etc/default/xbian-snap; then
+				sed -i "s/EXCLUDESUB=/EXCLUDESUB=storage,/g" /etc/default/xbian-snap
+				sed -i 's/[, \t]*$//' /etc/default/xbian-snap
+			fi
+		else
+			echo EXCLUDESUB=storage >> /etc/default/xbian-snap
+		fi
+		mkdir -p /home/xbian/storage
+		chown -R xbian:xbian /home/xbian/storage
+	fi
+
+	if ! grep -qw /home/xbian/storage /etc/fstab; then
+		echo "# --- Added by xbian-package-transmission, modify only if you know what you're doing ---" >> /etc/fstab
+		echo "/dev/root                  /home/xbian/storage     xbian subvol=storage/@,noatime,rw                  0       0" >> /etc/fstab
+	fi
+
+	mountpoint -q /home/xbian/storage || mount /home/xbian/storage &>/dev/null
+
+	if [ ! -d /home/xbian/downloads ]; then
+		if pgrep "xbmc.bin|kodi.bin" >/dev/null; then
+			MSGPATHV='/run/splash'
+			HOSTNAME=$(hostname)
+			su -c "echo -e \"Transmission\nTransmission's WebGUI is accessable under address\nhttp://localhost:9091 or http://$HOSTNAME:9091\nusername: xbian, password raspberry\n\$\" >> $MSGPATHV/msg4kodi" xbian || :
+		else
+			echo "************************************************"
+			echo "***              Transmission                ***"
+			echo "***       You can access WebGUI under        ***"
+			echo "***    http://localhost:9091, user xbian,    ***"
+			echo "***          password raspberry              ***"
+			echo "************************************************" 
+		fi
+	fi
+
+	mkdir -p /home/xbian/storage/transmission/downloads
+	chattr +C /home/xbian/storage/transmission/downloads
+	if [ -d /home/xbian/downloads -a ! -h /home/xbian/downloads ]; then
+		echo "Moving Transmission's downloads folder to storage subvolume ... "
+		find /home/xbian/downloads/ -maxdepth 1 -mindepth 1 -exec mv -f {} /home/xbian/storage/transmission/downloads/ \; -exec rm -rf {} \;
+		rmdir /home/xbian/downloads
+	fi
+
+	mkdir -p /home/xbian/storage/transmission/incomplete
+	chattr +C /home/xbian/storage/transmission/incomplete
+	if [ -d /home/xbian/incomplete -a ! -h /home/xbian/incomplete ]; then
+		echo "Moving Transmission's incomplete folder to storage subvolume ... "
+		find /home/xbian/incomplete/ -maxdepth 1 -mindepth 1 -exec mv -f {} /home/xbian/storage/transmission/incomplete/ \; -exec rm -rf {} \;
+		rmdir /home/xbian/incomplete
+	fi
+
+	chown -R xbian:xbian /home/xbian/storage/transmission
+
+	[ -d /home/xbian/downloads ] || ln -s storage/transmission/downloads/ /home/xbian/downloads
+	chown -R xbian:xbian /home/xbian/downloads
+
+	[ -d /home/xbian/incomplete ] || ln -s storage/transmission/incomplete/ /home/xbian/incomplete
+	chown -R xbian:xbian /home/xbian/incomplete
+
+	mkdir -p /home/xbian/torrents
+	chown -R xbian:xbian /home/xbian/torrents
+
+	if [ -d /etc/transmission ]; then
+	    cp -a /etc/transmission /home/xbian
+	    rm -rf /etc/transmission
+	fi
+
+	if [ -e /etc/default/transmission ] && grep -q "ENABLED=0" /etc/default/transmission; then
+		sed -i "s/ENABLE_DAEMON=.*/ENABLE_DAEMON=0/g" /etc/default/transmission-daemon
+	fi
+	rm -f /etc/default/transmission
+
+        if [ ! -h /etc/transmission-daemon/settings.json ]; then
+        	rm -f /etc/transmission-daemon/settings.json
+		ln -s ../../home/xbian/transmission/settings.json /etc/transmission-daemon/
+	fi
+
+	chown -R xbian:xbian /home/xbian/transmission
+
+	xbian-config services insert transmission-daemon &>/dev/null
+	xbian-config services start transmission-daemon &>/dev/null
+
+fi
+
+exit 0

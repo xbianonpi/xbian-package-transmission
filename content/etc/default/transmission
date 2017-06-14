@@ -1,5 +1,0 @@
-
-ENABLED=1
-
-CONFIG_DIR=/etc/transmission/
-NICE=9

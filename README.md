@@ -1,2 +1,2 @@
-Transmission 2.82 for xbian
-===========================
+Transmission package for XBian (meta package)
+=============================================
