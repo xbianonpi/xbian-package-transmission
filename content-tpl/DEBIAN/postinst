@@ -73,9 +73,10 @@ if [[ $1 == "configure" ]]; then
 	mkdir -p /home/xbian/torrents
 	chown -R xbian:xbian /home/xbian/torrents
 
-	if [ -d /etc/transmission ]; then
+	if [ -d /etc/transmission -a ! -h /etc/transmission ]; then
 	    cp -a /etc/transmission /home/xbian
 	    rm -rf /etc/transmission
+	    ln -s  ../home/xbian/transmission /etc/transmission
 	fi
 
 	if [ -e /etc/default/transmission ] && grep -q "ENABLED=0" /etc/default/transmission; then
@@ -83,9 +84,9 @@ if [[ $1 == "configure" ]]; then
 	fi
 	rm -f /etc/default/transmission
 
-        if [ ! -h /etc/transmission-daemon/settings.json ]; then
-        	rm -f /etc/transmission-daemon/settings.json
-		ln -s ../../home/xbian/transmission/settings.json /etc/transmission-daemon/
+	if [ ! -h /etc/transmission-daemon ]; then
+		rm -rf /etc/transmission-daemon
+		ln -s ../home/xbian/transmission /etc/transmission-daemon
 	fi
 
 	chown -R xbian:xbian /home/xbian/transmission
