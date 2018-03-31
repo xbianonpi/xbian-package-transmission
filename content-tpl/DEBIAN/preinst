@@ -20,6 +20,7 @@ if [ $1 == "install" -o $1 == "upgrade" ]; then
 		ln -s /home/xbian/transmission /usr/local/etc/transmission
 	fi
 
+        [ -d /etc/transmission -a ! -h /etc/transmission -a -e /etc/transmission/settings.json ] && mv /etc/transmission/settings.json /tmp
 fi
 
 exit 0

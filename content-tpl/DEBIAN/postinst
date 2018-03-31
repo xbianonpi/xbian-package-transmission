@@ -78,6 +78,7 @@ if [[ $1 == "configure" ]]; then
 	    rm -rf /etc/transmission
 	    ln -s  ../home/xbian/transmission /etc/transmission
 	fi
+	[ -e /tmp/settings.json ] && mv /tmp/settings.json /home/xbian/transmission
 
 	if [ -e /etc/default/transmission ] && grep -q "ENABLED=0" /etc/default/transmission; then
 		sed -i "s/ENABLE_DAEMON=.*/ENABLE_DAEMON=0/g" /etc/default/transmission-daemon
