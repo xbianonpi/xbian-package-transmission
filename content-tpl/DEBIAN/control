@@ -5,7 +5,7 @@ Section: net
 Priority: optional
 Architecture: armhf
 Pre-Depends: transmission-daemon
-Depends: transmission-cli, unrar, xbian-package-config-shell, xbian-package-xbianhome
+Depends: transmission-cli, unrar, xbian-package-config-shell (>=20181201-0), xbian-package-xbianhome
 Conflicts:
 Replaces: transmission-daemon
 Maintainer: mkreisl <mkreisl@xbian.org>
