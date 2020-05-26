@@ -1,6 +1,26 @@
 #!/bin/bash
 
-if [[ $1 == "configure" ]]; then
+transmission_storage()
+{
+	if ! xbian-storager listvol | grep -qw storage$; then
+		xbian-storager createvol --mount $@ --name='xbian-package-transmission' storage /home/xbian/storage
+		chown -R xbian:xbian /home/xbian/storage
+	fi
+
+	mountpoint -q /home/xbian/storage || mount /home/xbian/storage 2>/dev/null
+
+	if [ ! -d /home/xbian/storage/transmission/downloads ] || [ ! -d /home/xbian/storage/transmission/incomplete ]; then
+		mkdir -p /home/xbian/storage/transmission/downloads
+		chattr +C /home/xbian/storage/transmission/downloads 2>/dev/null || :
+
+		mkdir -p /home/xbian/storage/transmission/incomplete
+		chattr +C /home/xbian/storage/transmission/incomplete 2>/dev/null || :
+
+		chown -R xbian:xbian /home/xbian/storage/transmission
+	fi
+}
+
+if [ "$1" = configure ]; then
 	
 	/etc/init.d/transmission-daemon stop &>/dev/null
 	stop transmission-daemon &>/dev/null
@@ -10,26 +30,7 @@ if [[ $1 == "configure" ]]; then
 
 	update-rc.d transmission-daemon remove &>/dev/null
 
-	if ! btrfs-auto-snapshot listvol | grep -qw storage; then
-		btrfs-auto-snapshot createvol storage
-		if grep -q EXCLUDESUB /etc/default/xbian-snap; then
-			if ! grep -q EXCLUDESUB=.*storage /etc/default/xbian-snap; then
-				sed -i "s/EXCLUDESUB=/EXCLUDESUB=storage,/g" /etc/default/xbian-snap
-				sed -i 's/[, \t]*$//' /etc/default/xbian-snap
-			fi
-		else
-			echo EXCLUDESUB=storage >> /etc/default/xbian-snap
-		fi
-		mkdir -p /home/xbian/storage
-		chown -R xbian:xbian /home/xbian/storage
-	fi
-
-	if ! grep -qw /home/xbian/storage /etc/fstab; then
-		echo "# --- Added by xbian-package-transmission, modify only if you know what you're doing ---" >> /etc/fstab
-		echo "/dev/root                  /home/xbian/storage     xbian subvol=storage/@,noatime,rw                  0       0" >> /etc/fstab
-	fi
-
-	mountpoint -q /home/xbian/storage || mount /home/xbian/storage &>/dev/null
+	transmission_storage --exclude
 
 	if [ ! -d /home/xbian/downloads ]; then
 		if pgrep "xbmc.bin|kodi.bin" >/dev/null; then
@@ -46,16 +47,12 @@ if [[ $1 == "configure" ]]; then
 		fi
 	fi
 
-	mkdir -p /home/xbian/storage/transmission/downloads
-	chattr +C /home/xbian/storage/transmission/downloads
 	if [ -d /home/xbian/downloads -a ! -h /home/xbian/downloads ]; then
 		echo "Moving Transmission's downloads folder to storage subvolume ... "
 		find /home/xbian/downloads/ -maxdepth 1 -mindepth 1 -exec mv -f {} /home/xbian/storage/transmission/downloads/ \; -exec rm -rf {} \;
 		rmdir /home/xbian/downloads
 	fi
 
-	mkdir -p /home/xbian/storage/transmission/incomplete
-	chattr +C /home/xbian/storage/transmission/incomplete
 	if [ -d /home/xbian/incomplete -a ! -h /home/xbian/incomplete ]; then
 		echo "Moving Transmission's incomplete folder to storage subvolume ... "
 		find /home/xbian/incomplete/ -maxdepth 1 -mindepth 1 -exec mv -f {} /home/xbian/storage/transmission/incomplete/ \; -exec rm -rf {} \;
@@ -80,7 +77,7 @@ if [[ $1 == "configure" ]]; then
 	fi
 	[ -e /tmp/settings.json ] && mv /tmp/settings.json /home/xbian/transmission
 
-	if [ -e /etc/default/transmission ] && grep -q "ENABLED=0" /etc/default/transmission; then
+	if grep -qs "ENABLED=0" /etc/default/transmission; then
 		sed -i "s/ENABLE_DAEMON=.*/ENABLE_DAEMON=0/g" /etc/default/transmission-daemon
 	fi
 	rm -f /etc/default/transmission
@@ -93,8 +90,5 @@ if [[ $1 == "configure" ]]; then
 	chown -R xbian:xbian /home/xbian/transmission
 
 	xbian-config services insert transmission-daemon &>/dev/null
-	xbian-config services start transmission-daemon &>/dev/null
-
+	xbian-config services start transmission-daemon &>/dev/null || :
 fi
-
-exit 0
