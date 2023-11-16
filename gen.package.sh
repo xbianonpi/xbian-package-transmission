@@ -18,11 +18,11 @@ fi
 package=$(cat ./content/DEBIAN/control | grep Package | awk '{print $2}')
 version1=$(cat ./content/DEBIAN/control | grep Version | awk '{print $2}' | awk -F'-' '{print $1}')
 version2=$(cat ./content/DEBIAN/control | grep Version | awk '{print $2}' | awk -F'-' '{print $2}')
+arch="_$(grep -m1 'Architecture\:' ./content-tpl/DEBIAN/control | awk -F':' '{print $2}' | tr -d ' ')"
 
-[ $(date +%Y%m%d) = $version1 ] && version2=$((version2 + 1)) || version2=0
-version1=$(date +%Y%m%d)
+[ $(date +%Y%m%d) = $version1 ] && version2="-$((version2 + 1))" || version2=''
 
-version=$version1-$version2
+version=$(date +%Y%m%d)$version2
 rsync -a -f"+ */" -f"- *" content-tpl/. content/
 for f in $(find ./content-tpl -type f -printf "%P\n"); do
     cp ./content-tpl/$f content/$f
